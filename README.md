@@ -23,7 +23,7 @@ GitHub Actions (Every 5 min) → Torn API → MongoDB → Frontend Checks
 
 1. Fork or clone this repository
 2. Go to Settings → Secrets and add:
-   - `BOOKIE_API_KEY`: `C0wctKtdsgjJYpWe`
+   - `BOOKIE_API_KEY`: ``
    - `MONGODB_URI`: Your MongoDB connection string
 
 ### 2. MongoDB Atlas Setup
