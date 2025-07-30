@@ -76,6 +76,10 @@ class OddsEngine {
         const chainProb1 = this.calculateChainProbability(faction1, faction2);
         const chainProb2 = this.calculateChainProbability(faction2, faction1);
         
+        // Comprehensive faction strength analysis
+        const factionStrengthProb1 = this.calculateFactionStrengthProbability(faction1, faction2);
+        const factionStrengthProb2 = this.calculateFactionStrengthProbability(faction2, faction1);
+        
         // Historical performance
         const historyProb1 = this.calculateHistoricalProbability(factionIds[0], historicalData);
         const historyProb2 = this.calculateHistoricalProbability(factionIds[1], historicalData);
@@ -84,20 +88,22 @@ class OddsEngine {
         const timeProb1 = this.calculateTimeProbability(war);
         const timeProb2 = 1 - timeProb1; // Inverse relationship
         
-        // Weighted combination
+        // Weighted combination with enhanced faction analysis
         const baseProb1 = (
-            scoreProb1 * this.scoreWeight +
-            progressionProb1 * this.scoreWeight * 0.5 +
-            chainProb1 * this.scoreWeight * 0.3 +
-            historyProb1 * this.historyWeight +
+            scoreProb1 * this.scoreWeight * 0.3 +
+            progressionProb1 * this.scoreWeight * 0.2 +
+            chainProb1 * this.scoreWeight * 0.1 +
+            factionStrengthProb1 * this.scoreWeight * 0.6 +
+            historyProb1 * this.historyWeight * 0.3 +
             timeProb1 * this.timeWeight
         );
         
         const baseProb2 = (
-            scoreProb2 * this.scoreWeight +
-            progressionProb2 * this.scoreWeight * 0.5 +
-            chainProb2 * this.scoreWeight * 0.3 +
-            historyProb2 * this.historyWeight +
+            scoreProb2 * this.scoreWeight * 0.3 +
+            progressionProb2 * this.scoreWeight * 0.2 +
+            chainProb2 * this.scoreWeight * 0.1 +
+            factionStrengthProb2 * this.scoreWeight * 0.6 +
+            historyProb2 * this.historyWeight * 0.3 +
             timeProb2 * this.timeWeight
         );
         
@@ -202,6 +208,101 @@ class OddsEngine {
         // Early in war: more uncertainty (closer to 0.5)
         // Late in war: more certainty based on current scores
         return 0.5 + (progress - 0.5) * 0.4;
+    }
+
+    /**
+     * Calculate probability based on faction respect and ranking
+     */
+    calculateRespectProbability(faction, opponent) {
+        // Use respect as primary factor, with rank and members as modifiers
+        const totalRespect = (faction.respect || 0) + (opponent.respect || 0);
+        if (totalRespect === 0) return 0.5;
+        
+        // Base probability from respect
+        let prob = (faction.respect || 0) / totalRespect;
+        
+        // Adjust based on rank difference
+        const rankOrder = ['Diamond I', 'Diamond II', 'Diamond III', 'Platinum I', 'Platinum II', 'Platinum III', 'Gold I', 'Gold II', 'Gold III', 'Silver I', 'Silver II', 'Silver III', 'Bronze I', 'Bronze II', 'Bronze III'];
+        const factionRankIndex = rankOrder.indexOf(faction.rank || 'Unknown');
+        const opponentRankIndex = rankOrder.indexOf(opponent.rank || 'Unknown');
+        
+        if (factionRankIndex !== -1 && opponentRankIndex !== -1) {
+            const rankDifference = opponentRankIndex - factionRankIndex; // Positive if faction is higher ranked
+            const rankBonus = (rankDifference * 0.05); // 5% per rank level
+            prob += rankBonus;
+        }
+        
+        // Adjust based on member count (larger factions have slight advantage)
+        const totalMembers = (faction.members || 0) + (opponent.members || 0);
+        if (totalMembers > 0) {
+            const memberRatio = (faction.members || 0) / totalMembers;
+            const memberBonus = (memberRatio - 0.5) * 0.1; // 10% max impact
+            prob += memberBonus;
+        }
+        
+        return Math.max(0.05, Math.min(0.95, prob));
+    }
+
+    /**
+     * Calculate probability based on faction hall of fame position
+     */
+    calculatePositionProbability(faction, opponent) {
+        // Lower position number = higher ranking = better odds
+        const factionPos = faction.position || 999;
+        const opponentPos = opponent.position || 999;
+        
+        // Calculate position-based probability
+        const totalPosition = factionPos + opponentPos;
+        if (totalPosition === 0) return 0.5;
+        
+        // Inverse relationship: lower position = higher probability
+        let prob = opponentPos / totalPosition;
+        
+        // Add bonus for significant position differences
+        const positionDiff = opponentPos - factionPos;
+        if (Math.abs(positionDiff) > 10) {
+            const positionBonus = (positionDiff / 100) * 0.15; // 15% max impact
+            prob += positionBonus;
+        }
+        
+        return Math.max(0.05, Math.min(0.95, prob));
+    }
+
+    /**
+     * Calculate comprehensive faction strength probability
+     */
+    calculateFactionStrengthProbability(faction, opponent) {
+        // Combine respect, rank, members, and position for comprehensive analysis
+        const respectProb = this.calculateRespectProbability(faction, opponent);
+        const positionProb = this.calculatePositionProbability(faction, opponent);
+        
+        // Weight the factors
+        const respectWeight = 0.5; // 50% weight for respect
+        const positionWeight = 0.3; // 30% weight for position
+        const rankWeight = 0.2; // 20% weight for rank (already included in respect)
+        
+        let prob = (respectProb * respectWeight) + (positionProb * positionWeight);
+        
+        // Additional rank-based adjustments
+        const rankOrder = ['Diamond I', 'Diamond II', 'Diamond III', 'Platinum I', 'Platinum II', 'Platinum III', 'Gold I', 'Gold II', 'Gold III', 'Silver I', 'Silver II', 'Silver III', 'Bronze I', 'Bronze II', 'Bronze III'];
+        const factionRankIndex = rankOrder.indexOf(faction.rank || 'Unknown');
+        const opponentRankIndex = rankOrder.indexOf(opponent.rank || 'Unknown');
+        
+        if (factionRankIndex !== -1 && opponentRankIndex !== -1) {
+            const rankDifference = opponentRankIndex - factionRankIndex;
+            const rankBonus = (rankDifference * 0.03); // 3% per rank level
+            prob += rankBonus;
+        }
+        
+        // Member count adjustment
+        const totalMembers = (faction.members || 0) + (opponent.members || 0);
+        if (totalMembers > 0) {
+            const memberRatio = (faction.members || 0) / totalMembers;
+            const memberBonus = (memberRatio - 0.5) * 0.08; // 8% max impact
+            prob += memberBonus;
+        }
+        
+        return Math.max(0.05, Math.min(0.95, prob));
     }
 
     /**
