@@ -22,7 +22,7 @@ Betting Dashboard (uses faction data for odds calculation)
 
 ### 1. GitHub Actions Workflow
 - **File**: `.github/workflows/faction-data-collector.yml`
-- **Schedule**: Runs every 5 minutes
+- **Schedule**: Runs twice a week (Tuesday and Sunday at 2:00 AM UTC)
 - **Purpose**: Fetches faction data from Torn API and stores in MongoDB
 - **Features**:
   - Fetches top 100 factions at a time (API limit)
@@ -114,7 +114,7 @@ The MongoDB connection is already configured in the code. The database will be a
 
 ### 1. Data Collection (GitHub Actions)
 ```javascript
-// Every 5 minutes
+// Twice a week (Tuesday and Sunday at 2:00 AM UTC)
 1. Fetch faction data from Torn API
 2. Process each faction (respect, rank, members, position)
 3. Upsert into MongoDB (update existing or insert new)
@@ -208,7 +208,7 @@ Fetches faction data from MongoDB.
    - Check browser console for errors
 
 4. **Rate Limiting**:
-   - GitHub Actions runs every 5 minutes
+   - GitHub Actions runs twice a week (Tuesday and Sunday)
    - 1-second delay between API calls
    - Respects Torn API rate limits
 
@@ -244,7 +244,7 @@ Fetches faction data from MongoDB.
 - ✅ Cached faction data
 
 ### Reliability
-- ✅ Automatic data updates every 5 minutes
+- ✅ Automatic data updates twice a week (Tuesday and Sunday)
 - ✅ Fallback to cached data if API fails
 - ✅ Comprehensive error handling
 
